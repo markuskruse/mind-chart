@@ -1,0 +1,49 @@
+# Dependencies and build output
+node_modules/
+dist/
+dist-ssr/
+coverage/
+target/
+
+# Tauri bundles and generated metadata
+src-tauri/target/
+src-tauri/gen/schemas/
+*.AppImage
+*.deb
+*.dmg
+*.msi
+*.nsis.zip
+*.app/
+*.dSYM/
+
+# Logs and local runtime files
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.local
+
+# Environment files (keep templates such as .env.example)
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# IDE and editor files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.iml
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini

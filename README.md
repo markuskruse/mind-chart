@@ -1,0 +1,67 @@
+# Mind Chart
+
+A Tauri 2 desktop mind-map editor with React, TypeScript, Vite, and React Flow.
+
+## Development
+
+Install Node.js, Rust, and the [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) for your operating system, then:
+
+```sh
+npm install
+npm run tauri dev
+```
+
+To build native Linux packages (`.deb` and AppImage):
+
+```sh
+npm run build:linux
+```
+
+For the other desktop platforms, run the build on that platform:
+
+```sh
+# Windows: MSI and NSIS installer
+npm run build:windows
+
+# macOS: application bundle and DMG
+npm run build:macos
+
+# The default targets for the current platform
+npm run build:desktop
+```
+
+Native Tauri bundles should be built on their target operating system. The frontend, Rust shell, file dialogs, filesystem access, window controls, and close handling use Tauri APIs supported on Windows, macOS, and Linux.
+
+For browser-only UI development, run `npm run dev` and open http://localhost:1420.
+
+## Checks and builds
+
+```sh
+npm run build
+cargo check --manifest-path src-tauri/Cargo.toml
+npm run tauri build
+```
+
+The last command builds native application bundles for the current platform.
+
+## Editor
+
+- Click **Spread** to scale node-center distances from the bounding-box center by 1.05, or **Closer** to scale by 1/1.05. Node sizes stay unchanged.
+- Click **Frame** to pan and zoom to fit all nodes with a small margin.
+- Hold **Organize** (mouse, touch, or Space/Enter) to animate a force layout: nodes repel, connections pull. Release to stop; it also stops when movement settles.
+- Click **Relax** to gently even out connection lengths. Each click moves a node at most 3 canvas pixels toward the current average attachment distance; unconnected nodes stay put. This refines a rough layout rather than arranging a map from scratch.
+- Close the desktop window using its normal window controls. If the map has unsaved changes, choose Save, Discard, or Cancel.
+- Double-click empty workspace to create an idea.
+- Drag nodes to move them; drag the background to pan and scroll to zoom.
+- Select a node and drag from any point on its border onto another node to connect them. The line stays attached at the chosen point.
+- Select a node to edit its name, type, description, and background color (16 pastels) in the node editor.
+- Toggle **Arrow at start** and **Arrow at end** in the connection editor for no arrows, one arrow, or arrows at both ends.
+- Drag either endpoint of a selected connection along its node border to reposition the attachment.
+- Select a connection to edit its text in the right panel. Text is empty by default and appears at the center of the line.
+- Select nodes or connections and press Delete/Backspace to remove them.
+
+Use **Save** to select a JSON file on the first save and update that file on subsequent saves. **Save as** always opens the file picker. **Load last** reopens the last successfully saved or opened map, remembered per user in `~/.mind-chart/settings.json`. **Load** validates and opens a saved map; subsequent saves update the loaded file. Unsaved changes are indicated in the status bar, and loading another map asks before replacing them. File operations are available in the desktop app.
+
+Documents include node properties and positions, connection text, arrows, attachment points, and the viewport. Undo and Redo retain up to 10 full-document edit snapshots. Dragging, editing a text field, and each Organize hold are grouped into one step. Selection and pan/zoom alone do not create steps; loading a document starts a fresh history.
+
+`src/App.tsx` contains the initial editor, `src/App.css` its styles, and `src-tauri/` the native app shell.
