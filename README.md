@@ -32,6 +32,19 @@ npm run build:desktop
 
 Native Tauri bundles should be built on their target operating system. The frontend, Rust shell, file dialogs, filesystem access, window controls, and close handling use Tauri APIs supported on Windows, macOS, and Linux.
 
+### GitHub Actions builds
+
+The `Build desktop apps` workflow builds installers for Linux, Windows, Intel macOS, and Apple Silicon macOS. Run it manually from the repository's **Actions** tab, then download the bundles from the run's **Artifacts** section.
+
+Pushing a version tag also creates a draft GitHub Release and attaches the bundles:
+
+```sh
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+Keep the tag in sync with the version in `src-tauri/tauri.conf.json` before releasing. macOS and Windows builds are unsigned until signing credentials are configured, so their operating systems may show a warning when they are installed.
+
 For browser-only UI development, run `npm run dev` and open http://localhost:1420.
 
 ## Checks and builds
