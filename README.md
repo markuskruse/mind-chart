@@ -59,13 +59,13 @@ The last command builds native application bundles for the current platform.
 
 ## Editor
 
-- Click **Spread** to scale node-center distances from the bounding-box center by 1.05, or **Closer** to scale by 1/1.05. Node sizes stay unchanged.
+- Hold **Spread** or **Closer** to smoothly move node centers farther from or nearer to the map center. Release to stop; node sizes stay unchanged.
 - Click **Frame** to pan and zoom to fit all nodes with a small margin.
 - Hold **Organize** (mouse, touch, or Space/Enter) to animate a force layout: nodes repel, connections pull. Release to stop; it also stops when movement settles.
-- Click **Relax** to gently even out connection lengths. Each click moves a node at most 3 canvas pixels toward the current average attachment distance; unconnected nodes stay put. This refines a rough layout rather than arranging a map from scratch.
-- Close the desktop window using its normal window controls. If the map has unsaved changes, choose Save, Discard, or Cancel.
+- Hold **Relax** to slowly and gently even out connection lengths. Release to stop; it also stops when the map settles. Unconnected nodes stay put. This refines a rough layout rather than arranging a map from scratch.
+- Close the desktop window using its normal window controls. If the map has unsaved changes, an in-app dialog lets you Save, Discard, or Cancel.
 - Double-click empty workspace to create an idea.
-- Drag nodes to move them; drag the background to pan and scroll to zoom.
+- Drag nodes to move them; connected lines slide around the node borders to stay between the nodes. Drag the background to pan and scroll to zoom.
 - Select a node and drag from any point on its border onto another node to connect them. The line stays attached at the chosen point.
 - Select a node to edit its name, type, description, and background color (16 pastels) in the node editor.
 - Toggle **Arrow at start** and **Arrow at end** in the connection editor for no arrows, one arrow, or arrows at both ends.
@@ -75,6 +75,6 @@ The last command builds native application bundles for the current platform.
 
 Use **Save** to select a JSON file on the first save and update that file on subsequent saves. **Save as** always opens the file picker. **Load last** reopens the last successfully saved or opened map, remembered per user in `~/.mind-chart/settings.json`. **Load** validates and opens a saved map; subsequent saves update the loaded file. Unsaved changes are indicated in the status bar, and loading another map asks before replacing them. File operations are available in the desktop app.
 
-Documents include node properties and positions, connection text, arrows, attachment points, and the viewport. Undo and Redo retain up to 10 full-document edit snapshots. Dragging, editing a text field, and each Organize hold are grouped into one step. Selection and pan/zoom alone do not create steps; loading a document starts a fresh history.
+Documents include node properties and positions, connection text, arrows, attachment points, and the viewport. Undo and Redo retain up to 10 full-document edit snapshots. Dragging and editing a text field are grouped into one step. Consecutive holds of the same layout button also collapse into one step; switching layout buttons or making another edit starts a new one. Selection and pan/zoom alone do not create steps; loading a document starts a fresh history.
 
 `src/App.tsx` contains the initial editor, `src/App.css` its styles, and `src-tauri/` the native app shell.

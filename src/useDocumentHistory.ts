@@ -5,7 +5,7 @@ import { DocumentHistory } from "./history";
 
 const contentOf = (nodes: IdeaNode[], edges: Edge[]) => serializeDocument(nodes, edges, { x: 0, y: 0, zoom: 1 });
 
-export function useDocumentHistory(nodes: IdeaNode[], edges: Edge[], organizing: boolean) {
+export function useDocumentHistory(nodes: IdeaNode[], edges: Edge[], layoutAction: string | null) {
   const { getViewport, setViewport, setNodes, setEdges } = useReactFlow<IdeaNode>();
   const [counts, setCounts] = useState({ undo: 0, redo: 0 });
   const history = useRef<DocumentHistory | null>(null);
@@ -14,7 +14,7 @@ export function useDocumentHistory(nodes: IdeaNode[], edges: Edge[], organizing:
   });
   const gesture = useRef<string | null>(null);
   const sequence = useRef(0);
-  const organizeGroup = useRef<string | null>(null);
+  const layoutGroup = useRef<string | null>(null);
   const refresh = () => setCounts({ undo: history.current!.past.length, redo: history.current!.future.length });
 
   useEffect(() => {
@@ -61,20 +61,19 @@ export function useDocumentHistory(nodes: IdeaNode[], edges: Edge[], organizing:
   }, []);
 
   useLayoutEffect(() => {
-    if (organizing && organizeGroup.current === null) organizeGroup.current = `organize-${++sequence.current}`;
-    const changed = history.current!.record({ document: serializeDocument(nodes, edges, getViewport()), content: contentOf(nodes, edges) }, organizeGroup.current ?? gesture.current);
+    if (layoutAction !== null) layoutGroup.current = `layout-${layoutAction}`;
+    const changed = history.current!.record({ document: serializeDocument(nodes, edges, getViewport()), content: contentOf(nodes, edges) }, layoutGroup.current ?? gesture.current);
     if (changed) refresh();
-  }, [nodes, edges, organizing, getViewport]);
+  }, [nodes, edges, layoutAction, getViewport]);
 
   useEffect(() => {
-    if (organizing || organizeGroup.current === null) return;
-    // React Flow flushes its final controlled-node update after Organize stops.
+    if (layoutAction !== null || layoutGroup.current === null) return;
+    // React Flow flushes its final controlled-node update after a layout stops.
     const timer = setTimeout(() => {
-      organizeGroup.current = null;
-      history.current!.endGroup();
+      layoutGroup.current = null;
     }, 0);
     return () => clearTimeout(timer);
-  }, [organizing]);
+  }, [layoutAction]);
 
   function restore(direction: "undo" | "redo") {
     const snapshot = history.current![direction]();

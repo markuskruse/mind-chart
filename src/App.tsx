@@ -13,9 +13,10 @@ import "@xyflow/react/dist/style.css";
 import "./App.css";
 import { useDocumentHistory } from "./useDocumentHistory";
 import { useOrganize } from "./useOrganize";
-import { relaxNodes } from "./relax";
-import { scaleNodePositions } from "./spacing";
+import { useRelax } from "./useRelax";
+import { useSpacing, type SpacingDirection } from "./useSpacing";
 import { BorderConnector, BorderLine, BorderConnectionContext, ConnectionPreview, useConnectionDraft } from "./connections";
+import { followDraggedNodes } from "./connectionAnchors";
 
 const pastelColors = [
   { name: "Cream", value: "#F5EED6" },
@@ -58,16 +59,22 @@ const edgeTypes = { border: BorderLine };
 
 function Editor() {
   const organize = useOrganize();
+  const relax = useRelax();
+  const spacing = useSpacing();
   const [draft, setDraft] = useConnectionDraft();
   const [nodes, setNodes, onNodesChange] = useNodesState<IdeaNode>(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-  const history = useDocumentHistory(nodes, edges, organize.organizing);
-  const { screenToFlowPosition, deleteElements, getViewport, setViewport, fitView } = useReactFlow<IdeaNode>();
+  const layoutAction = organize.organizing ? "organize" : relax.relaxing ? "relax" : spacing.direction;
+  const layoutActive = layoutAction !== null;
+  const history = useDocumentHistory(nodes, edges, layoutAction);
+  const { screenToFlowPosition, deleteElements, getViewport, setViewport, fitView, getNodes } = useReactFlow<IdeaNode>();
   const [filePath, setFilePath] = useState<string | null>(null);
   const [fileBusy, setFileBusy] = useState(false);
   const fileLock = useRef(false);
   const [fileError, setFileError] = useState("");
   const [savedContent, setSavedContent] = useState("");
+  const [quitPromptOpen, setQuitPromptOpen] = useState(false);
+  const [quitBusy, setQuitBusy] = useState(false);
   // Pan/zoom is saved, but navigating the workspace does not mark content as edited.
   const content = serializeDocument(nodes, edges, { x: 0, y: 0, zoom: 1 });
   const dirty = content !== savedContent;
@@ -117,30 +124,35 @@ function Editor() {
     finally { fileLock.current = false; setFileBusy(false); }
   }
 
-  const closing = useRef(false);
   useEffect(() => {
     if (!isTauri()) return;
     let unlisten: (() => void) | undefined;
-    void getCurrentWindow().onCloseRequested(async (event) => {
-      if (closing.current || !dirty) return;
+    void getCurrentWindow().onCloseRequested((event) => {
+      if (!dirty) return;
       event.preventDefault();
       if (fileLock.current) return;
-      const saveChanges = await confirm("Save changes before quitting?", {
-        title: "Unsaved changes", kind: "warning",
-      });
-      if (saveChanges) {
-        if (!await saveDocument()) return;
-      } else {
-        const discardChanges = await confirm("Discard unsaved changes and quit?", {
-          title: "Unsaved changes", kind: "warning",
-        });
-        if (!discardChanges) return;
-      }
-      closing.current = true;
-      await getCurrentWindow().close();
+      setFileError("");
+      setQuitPromptOpen(true);
     }).then((remove) => { unlisten = remove; });
     return () => { unlisten?.(); };
   }, [dirty]);
+
+  async function finishQuit(saveFirst: boolean) {
+    if (quitBusy) return;
+    setQuitBusy(true);
+    if (saveFirst && !await saveDocument()) {
+      setQuitBusy(false);
+      return;
+    }
+    try {
+      // The original close request was prevented while the user chose an
+      // action, so finish without emitting another close-request event.
+      await getCurrentWindow().destroy();
+    } catch (error) {
+      setFileError(`Could not quit: ${String(error)}`);
+      setQuitBusy(false);
+    }
+  }
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       const modifier = event.ctrlKey || event.metaKey;
@@ -193,13 +205,25 @@ function Editor() {
         <button className="quit-button" disabled={!isTauri() || fileBusy} onClick={() => void loadDocument(true)}>Load last</button>
         <button className="quit-button" disabled={!isTauri() || fileBusy} onClick={() => void saveDocument()}>Save</button>
         <button className="quit-button" disabled={!isTauri() || fileBusy} onClick={() => void saveDocument(true)}>Save as</button>
-        <button className="quit-button" disabled={!history.canUndo || organize.organizing || fileBusy} onClick={() => { setDraft(null); history.undo(); }}>Undo</button>
-        <button className="quit-button" disabled={!history.canRedo || organize.organizing || fileBusy} onClick={() => { setDraft(null); history.redo(); }}>Redo</button>
+        <button className="quit-button" disabled={!history.canUndo || layoutActive || fileBusy} onClick={() => { setDraft(null); history.undo(); }}>Undo</button>
+        <button className="quit-button" disabled={!history.canRedo || layoutActive || fileBusy} onClick={() => { setDraft(null); history.redo(); }}>Redo</button>
       </div>
       </div>
       <div className="toolbar-actions map-actions" role="toolbar" aria-label="Map actions">
-        <button className="quit-button" onClick={() => setNodes((current) => relaxNodes(current, edges))} disabled={edges.length < 2} title="Gently even out connection lengths">Relax</button>
-        <button className="quit-button organize-button" disabled={nodes.length < 2 || fileBusy}
+        <button className="quit-button hold-button" disabled={edges.length < 2 || fileBusy || organize.organizing || spacing.direction !== null}
+          aria-pressed={relax.relaxing} title="Hold to gently even out connection lengths"
+          onPointerDown={(event) => {
+            if (event.button !== 0) return;
+            event.preventDefault();
+            event.currentTarget.setPointerCapture(event.pointerId);
+            relax.start();
+          }}
+          onPointerUp={relax.stop} onPointerCancel={relax.stop} onLostPointerCapture={relax.stop}
+          onBlur={relax.stop}
+          onKeyDown={(event) => { if ((event.key === " " || event.key === "Enter") && !event.repeat) { event.preventDefault(); relax.start(); } }}
+          onKeyUp={(event) => { if (event.key === " " || event.key === "Enter") { event.preventDefault(); relax.stop(); } }}
+        >Relax</button>
+        <button className="quit-button hold-button" disabled={nodes.length < 2 || fileBusy || relax.relaxing || spacing.direction !== null}
           aria-pressed={organize.organizing} title="Hold to organize nodes; release to stop"
           onPointerDown={(event) => {
             if (event.button !== 0) return;
@@ -213,8 +237,24 @@ function Editor() {
           onKeyUp={(event) => { if (event.key === " " || event.key === "Enter") { event.preventDefault(); organize.stop(); } }}
         >Organize</button>
         <button className="quit-button" onClick={() => void fitView({ padding: 0.02, minZoom: 0.000001, maxZoom: 100, duration: 250 })} disabled={nodes.length === 0} title="Fit all nodes into the workspace">Frame</button>
-        <button className="quit-button" onClick={() => setNodes((current) => scaleNodePositions(current, 1.05))} disabled={nodes.length < 2} title="Spread nodes 5% farther from the map center">Spread</button>
-        <button className="quit-button" onClick={() => setNodes((current) => scaleNodePositions(current, 1 / 1.05))} disabled={nodes.length < 2} title="Move nodes closer to the map center">Closer</button>
+        {(["spread", "closer"] as SpacingDirection[]).map((direction) => {
+          const active = spacing.direction === direction;
+          const label = direction === "spread" ? "Spread" : "Closer";
+          return <button key={direction} className="quit-button hold-button"
+            disabled={nodes.length < 2 || fileBusy || (layoutActive && !active)}
+            aria-pressed={active} title={`Hold to move nodes ${direction === "spread" ? "farther apart" : "closer together"}`}
+            onPointerDown={(event) => {
+              if (event.button !== 0) return;
+              event.preventDefault();
+              event.currentTarget.setPointerCapture(event.pointerId);
+              spacing.start(direction);
+            }}
+            onPointerUp={spacing.stop} onPointerCancel={spacing.stop} onLostPointerCapture={spacing.stop}
+            onBlur={spacing.stop}
+            onKeyDown={(event) => { if ((event.key === " " || event.key === "Enter") && !event.repeat) { event.preventDefault(); spacing.start(direction); } }}
+            onKeyUp={(event) => { if (event.key === " " || event.key === "Enter") { event.preventDefault(); spacing.stop(); } }}
+          >{label}</button>;
+        })}
       </div>
     </header>
     {fileError && <div className="error-banner" role="alert">{fileError}</div>}
@@ -223,6 +263,12 @@ function Editor() {
         <ReactFlow<IdeaNode>
           nodes={nodes} edges={edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes}
           onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect}
+          onNodeDrag={(_event, node, draggedNodes) => {
+            const movedNodes = draggedNodes.length > 0 ? draggedNodes : [node];
+            const positions = new Map(movedNodes.map((moved) => [moved.id, moved]));
+            const currentNodes = getNodes().map((current) => positions.get(current.id) ?? current);
+            setEdges((current) => followDraggedNodes(currentNodes, current, positions.keys()));
+          }}
           onPaneClick={(event) => { if (event.detail === 2) addNode(screenToFlowPosition({ x: event.clientX, y: event.clientY })); }}
           defaultEdgeOptions={{ type: "default", style: { stroke: "#8d9d93", strokeWidth: 2 } }}
           fitView fitViewOptions={{ padding: 0.25 }} minZoom={0.000001} maxZoom={100}
@@ -281,6 +327,20 @@ function Editor() {
       </aside>
     </main>
     <footer><span><span className="status-dot" /> {nodes.length} nodes · {edges.length} connections</span><span>{fileBusy ? "Working…" : isTauri() ? (dirty ? "Unsaved changes" : "All changes saved") : "Open the desktop app to save and load files."}</span></footer>
+    {quitPromptOpen && <div className="modal-backdrop" onKeyDown={(event) => {
+      if (event.key === "Escape" && !quitBusy) setQuitPromptOpen(false);
+    }}>
+      <section className="quit-dialog" role="dialog" aria-modal="true" aria-labelledby="quit-dialog-title" aria-describedby="quit-dialog-description">
+        <h2 id="quit-dialog-title">Save changes before quitting?</h2>
+        <p id="quit-dialog-description">Your changes will be lost if you discard them.</p>
+        {fileError && <p className="quit-dialog-error" role="alert">{fileError}</p>}
+        <div className="quit-dialog-actions">
+          <button className="primary" disabled={quitBusy} onClick={() => void finishQuit(true)}>Save</button>
+          <button className="danger-button" disabled={quitBusy} onClick={() => void finishQuit(false)}>Discard</button>
+          <button className="quit-button" autoFocus disabled={quitBusy} onClick={() => setQuitPromptOpen(false)}>Cancel</button>
+        </div>
+      </section>
+    </div>}
   </div></BorderConnectionContext.Provider>;
 }
 export default function App() {

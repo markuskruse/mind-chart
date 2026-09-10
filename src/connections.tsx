@@ -1,7 +1,7 @@
 import { createContext, useContext, useRef, useState, type PointerEvent } from "react";
 import { BaseEdge, EdgeLabelRenderer, Position, ViewportPortal, getBezierPath, useInternalNode, useReactFlow, type Edge, type Node, type EdgeProps, type XYPosition } from "@xyflow/react";
+import type { Anchor } from "./connectionAnchors";
 
-export type Anchor = { x: number; y: number; side: Position };
 export type BorderEdge = Edge<{ sourceAnchor: Anchor; targetAnchor: Anchor }>;
 type Draft = { source: string; anchor: Anchor; start: XYPosition; end: XYPosition };
 export const BorderConnectionContext = createContext<(draft: Draft | null) => void>(() => {});

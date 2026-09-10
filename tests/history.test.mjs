@@ -28,6 +28,20 @@ test('field edits and continuous gestures form single steps', () => {
   assert.deepEqual(h.undo(), snapshot(0));
   assert.deepEqual(h.redo(), snapshot(30));
 });
+test('consecutive uses of the same action collapse until another edit occurs', () => {
+  const h = new DocumentHistory(snapshot(0));
+  h.record(snapshot(1), 'layout-spread');
+  h.record(snapshot(2), 'layout-spread');
+  h.record(snapshot(3), 'layout-spread');
+  assert.equal(h.past.length, 1);
+
+  h.record(snapshot(4), 'layout-closer');
+  h.record(snapshot(5), 'layout-spread');
+  assert.equal(h.past.length, 3);
+  assert.deepEqual(h.undo(), snapshot(4));
+  assert.deepEqual(h.undo(), snapshot(3));
+  assert.deepEqual(h.undo(), snapshot(0));
+});
 test('new edits discard redo, no-op changes preserve it, and loading resets', () => {
   const h = new DocumentHistory(snapshot(0));
   h.record(snapshot(1)); h.record(snapshot(2)); h.undo();

@@ -16,7 +16,8 @@
         "width": 1280,
         "height": 820,
         "minWidth": 760,
-        "minHeight": 520
+        "minHeight": 520,
+        "generalAutofillEnabled": false
       }
     ],
     "security": {
