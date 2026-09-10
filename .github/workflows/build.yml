@@ -72,5 +72,5 @@ jobs:
           tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}
           releaseName: ${{ startsWith(github.ref, 'refs/tags/') && format('Mind Chart {0}', github.ref_name) || '' }}
           releaseBody: Download the installer for your platform below.
-          releaseDraft: true
+          releaseDraft: false
           generateReleaseNotes: true

@@ -72,7 +72,8 @@ function Editor() {
   const [fileBusy, setFileBusy] = useState(false);
   const fileLock = useRef(false);
   const [fileError, setFileError] = useState("");
-  const [savedContent, setSavedContent] = useState("");
+  const [savedContent, setSavedContent] = useState(() =>
+    serializeDocument(initialNodes, initialEdges, { x: 0, y: 0, zoom: 1 }));
   const [quitPromptOpen, setQuitPromptOpen] = useState(false);
   const [quitBusy, setQuitBusy] = useState(false);
   // Pan/zoom is saved, but navigating the workspace does not mark content as edited.

@@ -36,7 +36,7 @@ Native Tauri bundles should be built on their target operating system. The front
 
 The `Build desktop apps` workflow builds installers for Linux, Windows, Intel macOS, and Apple Silicon macOS. Run it manually from the repository's **Actions** tab, then download the bundles from the run's **Artifacts** section.
 
-Pushing a version tag also creates a draft GitHub Release and attaches the bundles:
+Pushing a version tag also creates a published GitHub Release and attaches the bundles:
 
 ```sh
 git tag v0.1.0
