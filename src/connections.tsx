@@ -116,11 +116,14 @@ export function BorderLine({ id, source, target, data, style, markerStart, marke
     sourcePosition: a.side, targetPosition: b.side,
   };
   const [path, labelX, labelY] = getBezierPath(coordinates);
-  return <><BaseEdge id={id} interactionWidth={40} path={path} markerStart={markerStart} markerEnd={markerEnd}
+  const strokeWidth = selected ? 3 : 2;
+  return <><path className="connection-outline" d={path} fill="none" stroke="rgba(247, 248, 244, .5)"
+    strokeWidth={strokeWidth + 3} strokeLinecap="round" strokeLinejoin="round" pointerEvents="none" />
+    <BaseEdge id={id} interactionWidth={40} path={path} markerStart={markerStart} markerEnd={markerEnd}
     label={label || undefined} labelX={labelX} labelY={labelY}
     labelStyle={{ fill: "#263c32", fontSize: 12 }}
     labelBgStyle={{ fill: "#f7f8f4" }} labelBgPadding={[6, 4]} labelBgBorderRadius={4}
-    style={{ stroke: selected ? "#315a43" : "#8d9d93", strokeWidth: 2, ...style }} />
+    style={{ stroke: selected ? "#315a43" : "#8d9d93", strokeWidth, ...style }} />
     {selected && <EdgeLabelRenderer>
       <ConnectionEndpoint edgeId={id} nodeId={source} end="source" x={coordinates.sourceX} y={coordinates.sourceY} />
       <ConnectionEndpoint edgeId={id} nodeId={target} end="target" x={coordinates.targetX} y={coordinates.targetY} />
