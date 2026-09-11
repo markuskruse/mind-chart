@@ -78,6 +78,12 @@ function Editor() {
     serializeDocument(initialNodes, initialEdges, { x: 0, y: 0, zoom: 1 }));
   const [quitPromptOpen, setQuitPromptOpen] = useState(false);
   const [quitBusy, setQuitBusy] = useState(false);
+  const [fileMenuOpen, setFileMenuOpen] = useState(false);
+  const fileMenuRef = useRef<HTMLDivElement>(null);
+  const [editMenuOpen, setEditMenuOpen] = useState(false);
+  const editMenuRef = useRef<HTMLDivElement>(null);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
   // Pan/zoom is saved, but navigating the workspace does not mark content as edited.
   const content = serializeDocument(nodes, edges, { x: 0, y: 0, zoom: 1 });
   const dirty = content !== savedContent;
@@ -188,6 +194,16 @@ function Editor() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [fileBusy, history, organize.organizing, saveDocument, setDraft]);
+  useEffect(() => {
+    const closeMenu = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (fileMenuRef.current && !fileMenuRef.current.contains(target)) setFileMenuOpen(false);
+      if (editMenuRef.current && !editMenuRef.current.contains(target)) setEditMenuOpen(false);
+      if (exportMenuRef.current && !exportMenuRef.current.contains(target)) setExportMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", closeMenu);
+    return () => document.removeEventListener("pointerdown", closeMenu);
+  }, []);
   const selected = nodes.find((node) => node.selected);
   const selectedEdge = edges.find((edge) => edge.selected);
   const connectionAppearance: ConnectionAppearance = {
@@ -226,19 +242,35 @@ function Editor() {
   return <BorderConnectionContext.Provider value={setDraft}><div className="app">
     <header className="topbar">
       <div className="file-section">
+        <div className="menu-row">
+        <div className="menu-bar" ref={fileMenuRef}>
+          <button className="menu-button" aria-haspopup="menu" aria-expanded={fileMenuOpen} onClick={() => setFileMenuOpen((open) => !open)}>File</button>
+          {fileMenuOpen && <div className="menu-dropdown" role="menu">
+            <button role="menuitem" disabled={!isTauri() || fileBusy} onClick={() => { setFileMenuOpen(false); void loadDocument(); }}>Load</button>
+            <button role="menuitem" disabled={!isTauri() || fileBusy} onClick={() => { setFileMenuOpen(false); void loadDocument(true); }}>Load last</button>
+            <button role="menuitem" disabled={!isTauri() || fileBusy} onClick={() => { setFileMenuOpen(false); void saveDocument(); }}>Save</button>
+            <button role="menuitem" disabled={!isTauri() || fileBusy} onClick={() => { setFileMenuOpen(false); void saveDocument(true); }}>Save as</button>
+        </div>}
+        </div>
+        <div className="menu-bar" ref={editMenuRef}>
+          <button className="menu-button" aria-haspopup="menu" aria-expanded={editMenuOpen} onClick={() => setEditMenuOpen((open) => !open)}>Edit</button>
+          {editMenuOpen && <div className="menu-dropdown" role="menu">
+            <button role="menuitem" onClick={() => { setEditMenuOpen(false); addNode(); }}>Create node</button>
+            <button role="menuitem" disabled={!history.canUndo || layoutActive || fileBusy} onClick={() => { setEditMenuOpen(false); setDraft(null); history.undo(); }}>Undo</button>
+            <button role="menuitem" disabled={!history.canRedo || layoutActive || fileBusy} onClick={() => { setEditMenuOpen(false); setDraft(null); history.redo(); }}>Redo</button>
+        </div>}
+        </div>
+        <div className="menu-bar" ref={exportMenuRef}>
+          <button className="menu-button" aria-haspopup="menu" aria-expanded={exportMenuOpen} onClick={() => setExportMenuOpen((open) => !open)}>Export</button>
+          {exportMenuOpen && <div className="menu-dropdown" role="menu">
+            <button role="menuitem" disabled={!isTauri() || fileBusy || nodes.length === 0} onClick={() => { setExportMenuOpen(false); void exportPdf(); }}>Export PDF</button>
+          </div>}
+        </div>
+        </div>
         <div className="file-heading" title={filePath ?? "Untitled map.json"}>
           <span className="file-name">{filePath?.split(/[\\/]/).pop() ?? "Untitled map.json"}</span>
           {dirty && <span className="unsaved-label"> (unsaved)</span>}
         </div>
-        <div className="toolbar-actions file-actions" role="toolbar" aria-label="File actions">
-        <button className="quit-button" disabled={!isTauri() || fileBusy} onClick={() => void loadDocument()}>Load</button>
-        <button className="quit-button" disabled={!isTauri() || fileBusy} onClick={() => void loadDocument(true)}>Load last</button>
-        <button className="quit-button" disabled={!isTauri() || fileBusy} onClick={() => void saveDocument()}>Save</button>
-        <button className="quit-button" disabled={!isTauri() || fileBusy} onClick={() => void saveDocument(true)}>Save as</button>
-        <button className="quit-button" disabled={!isTauri() || fileBusy || nodes.length === 0} onClick={() => void exportPdf()}>Export</button>
-        <button className="quit-button" disabled={!history.canUndo || layoutActive || fileBusy} onClick={() => { setDraft(null); history.undo(); }}>Undo</button>
-        <button className="quit-button" disabled={!history.canRedo || layoutActive || fileBusy} onClick={() => { setDraft(null); history.redo(); }}>Redo</button>
-      </div>
       </div>
       <div className="toolbar-actions map-actions" role="toolbar" aria-label="Map actions">
         <button className="quit-button hold-button" disabled={edges.length < 2 || fileBusy || organize.organizing || spacing.direction !== null}

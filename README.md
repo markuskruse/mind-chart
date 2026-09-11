@@ -74,9 +74,9 @@ The last command builds native application bundles for the current platform.
 - Select a connection to edit its text in the right panel. Text is empty by default and appears at the center of the line.
 - Select nodes or connections and press Delete/Backspace to remove them.
 
-Use **Save** to select a JSON file on the first save and update that file on subsequent saves. **Save as** always opens the file picker. **Load last** reopens the last successfully saved or opened map, remembered per user in `~/.mind-chart/settings.json`. **Load** validates and opens a saved map; subsequent saves update the loaded file. Unsaved changes are indicated in the status bar, and loading another map asks before replacing them. File operations are available in the desktop app.
+Open the **File** menu for Load, Load last, Save, and Save as. Save selects a JSON file on the first save and updates that file on subsequent saves. Save as always opens the file picker. Load last reopens the last successfully saved or opened map, remembered per user in `~/.mind-chart/settings.json`. Load validates and opens a saved map; subsequent saves update the loaded file. Unsaved changes are indicated in the status bar, and loading another map asks before replacing them. File operations are available in the desktop app.
 
-Use **Export** to write a PDF rendering of the current map. The export includes nodes, connection lines, labels, colors, line styles, and arrows.
+Open the **Export** menu and choose **Export PDF** to write a PDF rendering of the current map. The export includes nodes, connection lines, labels, colors, line styles, and arrows.
 
 Documents include node properties and positions, connection text, arrows, attachment points, and the viewport. Undo and Redo retain up to 10 full-document edit snapshots. Dragging and editing a text field are grouped into one step. Consecutive holds of the same layout button also collapse into one step; switching layout buttons or making another edit starts a new one. Selection and pan/zoom alone do not create steps; loading a document starts a fresh history.
 
