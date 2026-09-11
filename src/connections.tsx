@@ -1,8 +1,9 @@
 import { createContext, useContext, useRef, useState, type PointerEvent } from "react";
 import { BaseEdge, EdgeLabelRenderer, Position, ViewportPortal, getBezierPath, useInternalNode, useReactFlow, type Edge, type Node, type EdgeProps, type XYPosition } from "@xyflow/react";
 import type { Anchor } from "./connectionAnchors";
+import { defaultConnectionAppearance, type ConnectionAppearance } from "./connectionStyle";
 
-export type BorderEdge = Edge<{ sourceAnchor: Anchor; targetAnchor: Anchor }>;
+export type BorderEdge = Edge<{ sourceAnchor?: Anchor; targetAnchor?: Anchor } & Partial<ConnectionAppearance>>;
 type Draft = { source: string; anchor: Anchor; start: XYPosition; end: XYPosition };
 export const BorderConnectionContext = createContext<(draft: Draft | null) => void>(() => {});
 
@@ -39,7 +40,7 @@ export function BorderConnector({ id, selected }: { id: string; selected: boolea
       const targetAnchor = borderAnchor(card.getBoundingClientRect(), event.clientX, event.clientY);
       setEdges((edges) => [...edges, {
         id: crypto.randomUUID(), source: id, target: target.dataset.id!, type: "border", label: "",
-        data: { sourceAnchor: active.anchor, targetAnchor },
+        data: { sourceAnchor: active.anchor, targetAnchor, ...defaultConnectionAppearance },
       }]);
     }
     setActive(null);
@@ -116,14 +117,15 @@ export function BorderLine({ id, source, target, data, style, markerStart, marke
     sourcePosition: a.side, targetPosition: b.side,
   };
   const [path, labelX, labelY] = getBezierPath(coordinates);
-  const strokeWidth = selected ? 3 : 2;
+  const color = data?.color ?? defaultConnectionAppearance.color;
+  const strokeWidth = (data?.thickness === "thick" ? 4 : 2) + (selected ? 1 : 0);
   return <><path className="connection-outline" d={path} fill="none" stroke="rgba(247, 248, 244, .5)"
     strokeWidth={strokeWidth + 3} strokeLinecap="round" strokeLinejoin="round" pointerEvents="none" />
     <BaseEdge id={id} interactionWidth={40} path={path} markerStart={markerStart} markerEnd={markerEnd}
     label={label || undefined} labelX={labelX} labelY={labelY}
     labelStyle={{ fill: "#263c32", fontSize: 12 }}
     labelBgStyle={{ fill: "#f7f8f4" }} labelBgPadding={[6, 4]} labelBgBorderRadius={4}
-    style={{ stroke: selected ? "#315a43" : "#8d9d93", strokeWidth, ...style }} />
+    style={{ stroke: color, strokeWidth, strokeDasharray: data?.lineStyle === "dashed" ? "8 6" : undefined, ...style }} />
     {selected && <EdgeLabelRenderer>
       <ConnectionEndpoint edgeId={id} nodeId={source} end="source" x={coordinates.sourceX} y={coordinates.sourceY} />
       <ConnectionEndpoint edgeId={id} nodeId={target} end="target" x={coordinates.targetX} y={coordinates.targetY} />

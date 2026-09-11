@@ -1,4 +1,5 @@
 import { MarkerType, Position, type Edge, type Node, type Viewport } from "@xyflow/react";
+import { connectionColors } from "./connectionStyle.ts";
 
 export type IdeaData = { name: string; type: string; description: string; backgroundColor: string };
 export type IdeaNode = Node<IdeaData, "idea">;
@@ -29,10 +30,10 @@ function anchor(value: unknown) {
     || (value.side === Position.Top && value.y === 0) || (value.side === Position.Bottom && value.y === 1), "attachment must be on a border");
   return { x: value.x, y: value.y, side: value.side as Position };
 }
-function marker(value: unknown) {
+function marker(value: unknown, color: string) {
   if (value === undefined || value === null) return undefined;
   check(record(value) && value.type === MarkerType.ArrowClosed, "unsupported arrow");
-  return { type: MarkerType.ArrowClosed, color: "#8d9d93", width: 20, height: 20, orient: "auto-start-reverse" };
+  return { type: MarkerType.ArrowClosed, color, width: 20, height: 20, orient: "auto-start-reverse" };
 }
 export function parseDocument(text: string): MapDocument {
   const value: unknown = JSON.parse(text);
@@ -58,10 +59,27 @@ export function parseDocument(text: string): MapDocument {
     let data;
     if (edge.data !== undefined) {
       check(record(edge.data), "invalid connection data");
-      data = { sourceAnchor: anchor(edge.data.sourceAnchor), targetAnchor: anchor(edge.data.targetAnchor) };
+      const edgeData = edge.data;
+      data = {
+        ...(edgeData.sourceAnchor === undefined ? {} : { sourceAnchor: anchor(edgeData.sourceAnchor) }),
+        ...(edgeData.targetAnchor === undefined ? {} : { targetAnchor: anchor(edgeData.targetAnchor) }),
+      } as Record<string, unknown>;
+      if (edgeData.color !== undefined) {
+        check(connectionColors.some((color) => color.value === edgeData.color), "unsupported connection color");
+        data.color = edgeData.color;
+      }
+      if (edgeData.lineStyle !== undefined) {
+        check(edgeData.lineStyle === "solid" || edgeData.lineStyle === "dashed", "unsupported connection line style");
+        data.lineStyle = edgeData.lineStyle;
+      }
+      if (edgeData.thickness !== undefined) {
+        check(edgeData.thickness === "thin" || edgeData.thickness === "thick", "unsupported connection thickness");
+        data.thickness = edgeData.thickness;
+      }
     }
+    const connectionColor = typeof data?.color === "string" ? data.color : connectionColors[0].value;
     return { id: edge.id, type: "border", source: edge.source, target: edge.target, label: edge.label, data,
-      markerStart: marker(edge.markerStart), markerEnd: marker(edge.markerEnd) };
+      markerStart: marker(edge.markerStart, connectionColor), markerEnd: marker(edge.markerEnd, connectionColor) };
   });
   const view = value.viewport;
   check(record(view) && finite(view.x) && finite(view.y) && finite(view.zoom) && view.zoom >= .000001 && view.zoom <= 100, "invalid viewport");

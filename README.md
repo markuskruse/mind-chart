@@ -69,6 +69,7 @@ The last command builds native application bundles for the current platform.
 - Select a node and drag from any point on its border onto another node to connect them. The line stays attached at the chosen point.
 - Select a node to edit its name, type, description, and background color (16 pastels) in the node editor.
 - Toggle **Arrow at start** and **Arrow at end** in the connection editor for no arrows, one arrow, or arrows at both ends.
+- Choose from 10 dark connection colors and switch each connection between solid/dashed and thin/thick. New connections default to black, solid, and thin.
 - Drag either endpoint of a selected connection along its node border to reposition the attachment.
 - Select a connection to edit its text in the right panel. Text is empty by default and appears at the center of the line.
 - Select nodes or connections and press Delete/Backspace to remove them.

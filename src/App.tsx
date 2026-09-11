@@ -17,6 +17,7 @@ import { useRelax } from "./useRelax";
 import { useSpacing, type SpacingDirection } from "./useSpacing";
 import { BorderConnector, BorderLine, BorderConnectionContext, ConnectionPreview, useConnectionDraft } from "./connections";
 import { followDraggedNodes } from "./connectionAnchors";
+import { connectionColors, defaultConnectionAppearance, type ConnectionAppearance } from "./connectionStyle";
 
 const pastelColors = [
   { name: "Cream", value: "#F5EED6" },
@@ -176,6 +177,11 @@ function Editor() {
   }, [fileBusy, history, organize.organizing, saveDocument, setDraft]);
   const selected = nodes.find((node) => node.selected);
   const selectedEdge = edges.find((edge) => edge.selected);
+  const connectionAppearance: ConnectionAppearance = {
+    color: connectionColors.find((color) => color.value === selectedEdge?.data?.color)?.value ?? defaultConnectionAppearance.color,
+    lineStyle: selectedEdge?.data?.lineStyle === "dashed" ? "dashed" : "solid",
+    thickness: selectedEdge?.data?.thickness === "thick" ? "thick" : "thin",
+  };
   const onConnect = useCallback((connection: Connection) => {
     setEdges((current) => addEdge(connection, current));
   }, [setEdges]);
@@ -193,6 +199,16 @@ function Editor() {
     if (!selected) return;
     setNodes((current) => current.map((node) => node.id === selected.id
       ? { ...node, data: { ...node.data, [field]: value } } : node));
+  }
+  function updateConnectionAppearance(update: Partial<ConnectionAppearance>) {
+    if (!selectedEdge) return;
+    setEdges((current) => current.map((edge) => {
+      if (edge.id !== selectedEdge.id) return edge;
+      const recolor = (marker: Edge["markerStart"]) => update.color && typeof marker === "object" && marker !== null
+        ? { ...marker, color: update.color } : marker;
+      return { ...edge, data: { ...edge.data, ...update },
+        markerStart: recolor(edge.markerStart), markerEnd: recolor(edge.markerEnd) };
+    }));
   }
   return <BorderConnectionContext.Provider value={setDraft}><div className="app">
     <header className="topbar">
@@ -289,13 +305,38 @@ function Editor() {
             onChange={(event) => setEdges((current) => current.map((edge) => edge.id === selectedEdge.id
               ? { ...edge, label: event.target.value } : edge))}
             placeholder="Connection text" />
+          <fieldset className="color-picker connection-color-picker">
+            <legend>Color</legend>
+            <div className="color-grid connection-color-grid">
+              {connectionColors.map((color) => <button
+                key={color.value} type="button" className="color-swatch connection-color-swatch"
+                style={{ backgroundColor: color.value }}
+                aria-label={color.name} title={color.name}
+                aria-pressed={connectionAppearance.color === color.value}
+                onClick={() => updateConnectionAppearance({ color: color.value })}
+              >{connectionAppearance.color === color.value ? "✓" : ""}</button>)}
+            </div>
+          </fieldset>
+          <fieldset className="arrow-options">
+            <legend>Line</legend>
+            <label className="arrow-toggle">
+              <input type="checkbox" checked={connectionAppearance.lineStyle === "dashed"}
+                onChange={(event) => updateConnectionAppearance({ lineStyle: event.target.checked ? "dashed" : "solid" })} />
+              Dashed
+            </label>
+            <label className="arrow-toggle">
+              <input type="checkbox" checked={connectionAppearance.thickness === "thick"}
+                onChange={(event) => updateConnectionAppearance({ thickness: event.target.checked ? "thick" : "thin" })} />
+              Thick
+            </label>
+          </fieldset>
           <fieldset className="arrow-options">
             <legend>Arrows</legend>
             {(["markerStart", "markerEnd"] as const).map((end) => <label key={end} className="arrow-toggle">
               <input type="checkbox" checked={Boolean(selectedEdge[end])}
                 onChange={(event) => {
                   const marker = event.target.checked
-                    ? { type: MarkerType.ArrowClosed, color: "#8d9d93", width: 20, height: 20, orient: "auto-start-reverse" }
+                    ? { type: MarkerType.ArrowClosed, color: connectionAppearance.color, width: 20, height: 20, orient: "auto-start-reverse" }
                     : undefined;
                   setEdges((current) => current.map((edge) => edge.id === selectedEdge.id ? { ...edge, [end]: marker } : edge));
                 }} />
