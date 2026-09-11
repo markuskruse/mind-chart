@@ -65,6 +65,7 @@ The last command builds native application bundles for the current platform.
 - Hold **Relax** to slowly and gently even out connection lengths. Release to stop; it also stops when the map settles. Unconnected nodes stay put. This refines a rough layout rather than arranging a map from scratch.
 - Close the desktop window using its normal window controls. If the map has unsaved changes, an in-app dialog lets you Save, Discard, or Cancel.
 - Double-click empty workspace to create an idea.
+- Choose **Edit → Find** to search node names, types, and descriptions. Select a result to center the workspace on that node.
 - Drag nodes to move them; connected lines slide around the node borders to stay between the nodes. When sliding reaches a node side, all anchors already on that side are spaced evenly and ordered toward their other nodes, including connections whose other node did not move. Drag the background to pan and scroll to zoom.
 - Select a node and drag from any point on its border onto another node to connect them. The line stays attached at the chosen point.
 - Select a node to edit its name, type, description, and background color (16 pastels) in the node editor.

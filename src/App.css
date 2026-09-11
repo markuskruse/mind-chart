@@ -15,6 +15,17 @@ main { flex: 1; min-height: 0; display: flex; }
 h1 { font-family: Georgia, serif; font-size: 28px; font-weight: 400; margin: 8px 0; letter-spacing: -.7px; }
 .inspector { width: 290px; padding: 29px 24px; border-left: 1px solid #dfe5dc; background: #fffefa; display: flex; flex-direction: column; overflow-y: auto; }
 .empty-copy { color: #7a857a; font-size: 13px; line-height: 1.8; margin: 0; }
+.find-panel { display: flex; flex-direction: column; min-height: 100%; }
+.find-panel > label { font-size: 12px; font-weight: 600; margin-bottom: 10px; }
+.find-panel > input { width: 100%; border: 1px solid #dbe2d7; background: #fafbf7; border-radius: 7px; padding: 11px; color: #263c32; font-size: 13px; }
+.find-results { display: flex; flex-direction: column; gap: 6px; margin-top: 16px; }
+.find-result { display: flex; flex-direction: column; gap: 3px; width: 100%; padding: 10px; border: 1px solid #dbe2d7; border-radius: 7px; background: #fafbf7; color: #263c32; text-align: left; }
+.find-result:hover { border-color: #789a72; background: #eef1e9; }
+.find-result strong { font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
+.find-result span { font-size: 11px; color: #778779; }
+.find-empty { color: #7a857a; font-size: 12px; margin: 4px 0; }
+.close-find { margin-top: auto; align-self: flex-start; padding: 6px 0; border: 0; background: none; color: #536357; font-size: 12px; }
+.close-find:hover { color: #263c32; }
 .fields { display: flex; flex-direction: column; gap: 10px; }
 .fields label { font-size: 12px; font-weight: 600; }
 .fields input, .fields textarea { width: 100%; border: 1px solid #dbe2d7; background: #fafbf7; border-radius: 7px; padding: 11px; color: #263c32; font-size: 13px; }

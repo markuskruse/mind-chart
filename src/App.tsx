@@ -69,7 +69,7 @@ function Editor() {
   const layoutAction = organize.organizing ? "organize" : relax.relaxing ? "relax" : spacing.direction;
   const layoutActive = layoutAction !== null;
   const history = useDocumentHistory(nodes, edges, layoutAction);
-  const { screenToFlowPosition, deleteElements, getViewport, setViewport, fitView, getNodes } = useReactFlow<IdeaNode>();
+  const { screenToFlowPosition, deleteElements, getViewport, setViewport, fitView, getNodes, setCenter } = useReactFlow<IdeaNode>();
   const [filePath, setFilePath] = useState<string | null>(null);
   const [fileBusy, setFileBusy] = useState(false);
   const fileLock = useRef(false);
@@ -84,6 +84,8 @@ function Editor() {
   const editMenuRef = useRef<HTMLDivElement>(null);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
+  const [findOpen, setFindOpen] = useState(false);
+  const [findText, setFindText] = useState("");
   // Pan/zoom is saved, but navigating the workspace does not mark content as edited.
   const content = serializeDocument(nodes, edges, { x: 0, y: 0, zoom: 1 });
   const dirty = content !== savedContent;
@@ -206,6 +208,23 @@ function Editor() {
   }, []);
   const selected = nodes.find((node) => node.selected);
   const selectedEdge = edges.find((edge) => edge.selected);
+  const findResults = nodes.filter((node) => {
+    const query = findText.trim().toLocaleLowerCase();
+    return query.length > 0 && `${node.data.name} ${node.data.type} ${node.data.description}`.toLocaleLowerCase().includes(query);
+  });
+  function focusNode(node: IdeaNode) {
+    setNodes((current) => current.map((item) => ({ ...item, selected: item.id === node.id })));
+    setEdges((current) => current.map((edge) => ({ ...edge, selected: false })));
+    const width = node.measured?.width ?? node.width ?? 240;
+    const height = node.measured?.height ?? node.height ?? 100;
+    const workspace = document.querySelector(".workspace")?.getBoundingClientRect();
+    const zoom = workspace
+      ? Math.min((workspace.width * 0.2) / width, (workspace.height * 0.2) / height)
+      : 1;
+    void setCenter(node.position.x + width / 2, node.position.y + height / 2, {
+      zoom: Math.max(0.2, Math.min(2, zoom)), duration: 300,
+    });
+  }
   const connectionAppearance: ConnectionAppearance = {
     color: connectionColors.find((color) => color.value === selectedEdge?.data?.color)?.value ?? defaultConnectionAppearance.color,
     lineStyle: selectedEdge?.data?.lineStyle === "dashed" ? "dashed" : "solid",
@@ -256,6 +275,7 @@ function Editor() {
           <button className="menu-button" aria-haspopup="menu" aria-expanded={editMenuOpen} onClick={() => setEditMenuOpen((open) => !open)}>Edit</button>
           {editMenuOpen && <div className="menu-dropdown" role="menu">
             <button role="menuitem" onClick={() => { setEditMenuOpen(false); addNode(); }}>Create node</button>
+            <button role="menuitem" onClick={() => { setEditMenuOpen(false); setFindOpen(true); }}>Find</button>
             <button role="menuitem" disabled={!history.canUndo || layoutActive || fileBusy} onClick={() => { setEditMenuOpen(false); setDraft(null); history.undo(); }}>Undo</button>
             <button role="menuitem" disabled={!history.canRedo || layoutActive || fileBusy} onClick={() => { setEditMenuOpen(false); setDraft(null); history.redo(); }}>Redo</button>
         </div>}
@@ -344,8 +364,19 @@ function Editor() {
         </ReactFlow>
         <div className="workspace-label"><span className="eyebrow">YOUR WORKSPACE</span><h1>Room to think.</h1></div>
       </section>
-      <aside className="inspector" aria-label={selectedEdge ? "Connection editor" : "Node editor"}>
-        {selectedEdge ? <div className="fields">
+      <aside className="inspector" aria-label={findOpen ? "Find" : selectedEdge ? "Connection editor" : "Node editor"}>
+        {findOpen ? <div className="find-panel">
+          <label htmlFor="find-text">Find</label>
+          <input id="find-text" autoFocus value={findText} onChange={(event) => setFindText(event.target.value)} placeholder="Search nodes…" />
+          <div className="find-results" aria-live="polite">
+            {findText.trim() && findResults.length === 0 && <p className="find-empty">No matching nodes.</p>}
+            {findResults.map((node) => <button key={node.id} className="find-result" onClick={() => focusNode(node)}>
+              <strong>{node.data.name || "Untitled idea"}</strong>
+              {node.data.type && <span>{node.data.type}</span>}
+            </button>)}
+          </div>
+          <button className="close-find" onClick={() => setFindOpen(false)}>Close find</button>
+        </div> : selectedEdge ? <div className="fields">
           <label htmlFor="connection-text">Text</label>
           <input id="connection-text" value={typeof selectedEdge.label === "string" ? selectedEdge.label : ""}
             onChange={(event) => setEdges((current) => current.map((edge) => edge.id === selectedEdge.id
