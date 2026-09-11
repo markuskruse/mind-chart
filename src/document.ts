@@ -33,7 +33,7 @@ function anchor(value: unknown) {
 function marker(value: unknown, color: string) {
   if (value === undefined || value === null) return undefined;
   check(record(value) && value.type === MarkerType.ArrowClosed, "unsupported arrow");
-  return { type: MarkerType.ArrowClosed, color, width: 20, height: 20, orient: "auto-start-reverse" };
+  return { type: MarkerType.ArrowClosed, color, width: 10, height: 10, orient: "auto-start-reverse" };
 }
 export function parseDocument(text: string): MapDocument {
   const value: unknown = JSON.parse(text);

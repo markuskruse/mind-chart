@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { isTauri, invoke } from "@tauri-apps/api/core";
 import { open, save, confirm } from "@tauri-apps/plugin-dialog";
-import { readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
+import { readTextFile, writeFile, writeTextFile } from "@tauri-apps/plugin-fs";
 import { parseDocument, serializeDocument, type IdeaNode, type IdeaData } from "./document";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
@@ -18,6 +18,7 @@ import { useSpacing, type SpacingDirection } from "./useSpacing";
 import { BorderConnector, BorderLine, BorderConnectionContext, ConnectionPreview, useConnectionDraft } from "./connections";
 import { followDraggedNodes } from "./connectionAnchors";
 import { connectionColors, defaultConnectionAppearance, type ConnectionAppearance } from "./connectionStyle";
+import { createMapPdf } from "./exportPdf";
 
 const pastelColors = [
   { name: "Cream", value: "#F5EED6" },
@@ -100,6 +101,18 @@ function Editor() {
     } catch (error) { setFileError(`Could not save: ${String(error)}`); }
     finally { fileLock.current = false; setFileBusy(false); }
     return false;
+  }
+  async function exportPdf() {
+    if (fileLock.current || !isTauri()) return;
+    fileLock.current = true;
+    setFileBusy(true);
+    setFileError("");
+    try {
+      const path = await save({ title: "Export Mind Map as PDF", defaultPath: `${filePath?.split(/[\\/]/).pop()?.replace(/\.json$/i, "") ?? "mind-map"}.pdf`, filters: [{ name: "PDF document", extensions: ["pdf"] }] });
+      if (!path) return;
+      await writeFile(path, createMapPdf(nodes, edges));
+    } catch (error) { setFileError(`Could not export PDF: ${String(error)}`); }
+    finally { fileLock.current = false; setFileBusy(false); }
   }
   async function loadDocument(loadLast = false) {
     if (fileLock.current) return;
@@ -222,6 +235,7 @@ function Editor() {
         <button className="quit-button" disabled={!isTauri() || fileBusy} onClick={() => void loadDocument(true)}>Load last</button>
         <button className="quit-button" disabled={!isTauri() || fileBusy} onClick={() => void saveDocument()}>Save</button>
         <button className="quit-button" disabled={!isTauri() || fileBusy} onClick={() => void saveDocument(true)}>Save as</button>
+        <button className="quit-button" disabled={!isTauri() || fileBusy || nodes.length === 0} onClick={() => void exportPdf()}>Export</button>
         <button className="quit-button" disabled={!history.canUndo || layoutActive || fileBusy} onClick={() => { setDraft(null); history.undo(); }}>Undo</button>
         <button className="quit-button" disabled={!history.canRedo || layoutActive || fileBusy} onClick={() => { setDraft(null); history.redo(); }}>Redo</button>
       </div>
@@ -336,7 +350,7 @@ function Editor() {
               <input type="checkbox" checked={Boolean(selectedEdge[end])}
                 onChange={(event) => {
                   const marker = event.target.checked
-                    ? { type: MarkerType.ArrowClosed, color: connectionAppearance.color, width: 20, height: 20, orient: "auto-start-reverse" }
+                    ? { type: MarkerType.ArrowClosed, color: connectionAppearance.color, width: 10, height: 10, orient: "auto-start-reverse" }
                     : undefined;
                   setEdges((current) => current.map((edge) => edge.id === selectedEdge.id ? { ...edge, [end]: marker } : edge));
                 }} />

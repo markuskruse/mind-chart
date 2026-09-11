@@ -125,7 +125,7 @@ export function BorderLine({ id, source, target, data, style, markerStart, marke
     label={label || undefined} labelX={labelX} labelY={labelY}
     labelStyle={{ fill: "#263c32", fontSize: 12 }}
     labelBgStyle={{ fill: "#f7f8f4" }} labelBgPadding={[6, 4]} labelBgBorderRadius={4}
-    style={{ stroke: color, strokeWidth, strokeDasharray: data?.lineStyle === "dashed" ? "8 6" : undefined, ...style }} />
+    style={{ ...style, stroke: color, strokeWidth, strokeDasharray: data?.lineStyle === "dashed" ? "8 6" : undefined }} />
     {selected && <EdgeLabelRenderer>
       <ConnectionEndpoint edgeId={id} nodeId={source} end="source" x={coordinates.sourceX} y={coordinates.sourceY} />
       <ConnectionEndpoint edgeId={id} nodeId={target} end="target" x={coordinates.targetX} y={coordinates.targetY} />

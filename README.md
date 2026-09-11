@@ -76,6 +76,8 @@ The last command builds native application bundles for the current platform.
 
 Use **Save** to select a JSON file on the first save and update that file on subsequent saves. **Save as** always opens the file picker. **Load last** reopens the last successfully saved or opened map, remembered per user in `~/.mind-chart/settings.json`. **Load** validates and opens a saved map; subsequent saves update the loaded file. Unsaved changes are indicated in the status bar, and loading another map asks before replacing them. File operations are available in the desktop app.
 
+Use **Export** to write a PDF rendering of the current map. The export includes nodes, connection lines, labels, colors, line styles, and arrows.
+
 Documents include node properties and positions, connection text, arrows, attachment points, and the viewport. Undo and Redo retain up to 10 full-document edit snapshots. Dragging and editing a text field are grouped into one step. Consecutive holds of the same layout button also collapse into one step; switching layout buttons or making another edit starts a new one. Selection and pan/zoom alone do not create steps; loading a document starts a fresh history.
 
 `src/App.tsx` contains the initial editor, `src/App.css` its styles, and `src-tauri/` the native app shell.
